@@ -1,0 +1,15 @@
+# requirements.txt - PQC Homomorphic Encryption Project
+
+# Web Framework
+flask>=3.0.0
+
+# Cryptography Libraries
+cryptography>=41.0.0
+pqcrypto>=0.3.4
+
+# HTTP Requests
+requests>=2.31.0
+
+# Future: Homomorphic Encryption (for Milestone 2)
+# tenseal>=0.3.14
+# phe>=1.5.0
