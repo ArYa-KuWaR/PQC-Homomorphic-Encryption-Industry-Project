@@ -11,7 +11,7 @@ The server is untrusted: it never sees plaintext or private keys, and messages a
 ---
 
 ## Repository structure
-
+```
 PQC-HOMOMORPHIC-ENCRYPTION-INDUSTRY-PROJECT/
 ├── previous client.py files/
 │ ├── client_pqc_drm.py
@@ -30,8 +30,8 @@ PQC-HOMOMORPHIC-ENCRYPTION-INDUSTRY-PROJECT/
 ├── README.md
 ├── requirements.txt
 └── server.py # untrusted relay server (auto-deletes after read)
+```
 
-text
 
 ---
 
@@ -48,44 +48,51 @@ text
 ## Quick start
 
 1) Create and activate a virtual environment
-
+```
 python -m venv venv
-
+```
 Windows
+```
 venv\Scripts\activate
-
+```
 macOS/Linux
+```
 source venv/bin/activate
+```
 
-text
 
 2) Install dependencies
-
+```
 pip install -r requirements.txt
+```
 
-text
 
 3) Start the server
-
+```
 python server.py
+```
 
-text
 
 4) Run the interactive client in two terminals
 
 Terminal A:
+```
 python client_interactive.py
 
 enter username: alice
-text
+```
+
 
 Terminal B:
+```
 python client_interactive.py
 
 enter username: bob
-text
+```
+
 
 5) In Alice’s UI
+
 - Choose “Send Message”
 - Recipient: bob
 - Enter message text
@@ -110,39 +117,43 @@ text
 ## Commands and utilities
 
 - Test PQC (ML-KEM) flow:
+```
 python test files/test_pqc_Pure.py
+```
 
-text
 
 - Test homomorphic encryption utilities:
+```
 python test files/test_HE.py
 python drm_policy.py
+```
 
-text
 
 - Check server status (in browser):
+```
 http://127.0.0.1:5000/status
+```
 
-text
 
 - Clear a user’s inbox (debug):
+```
 DELETE /clear_inbox/<username>
-
-text
+```
 
 ---
 
 ## Configuration notes
 
 - Requirements (see requirements.txt):
-  - flask
+```
+   - flask
   - cryptography
   - pqcrypto (ML-KEM-1024)
   - requests
   - numpy
   - tenseal (optional HE flow)
   - rich (UI)
-
+```
 - Messages are persisted under `server_messages/<user>/` while pending, then deleted on delivery.
 
 ---
@@ -177,11 +188,6 @@ Note: This is a research prototype. For production, add TLS, authenticated users
 - Persistent DB backend (SQLite/PostgreSQL).
 - Web or mobile client front-ends.
 
----
-
-## License
-
-MIT — see LICENSE.
 
 ---
 
