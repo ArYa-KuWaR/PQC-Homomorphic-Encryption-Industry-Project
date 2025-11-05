@@ -1,50 +1,113 @@
 
-# E2EE Chat App with X3DH
+# 🔐 PQC + Homomorphic Encryption Chat System
 
-This project is a Python-based command-line prototype of a secure, end-to-end encrypted (E2EE) chat application. It implements the **X3DH (Extended Triple Diffie-Hellman)** key agreement protocol, which is the foundational technology used by secure messengers like Signal.
+A Python-based secure messaging prototype implementing **Post-Quantum Cryptography (PQC)** and **Homomorphic Encryption (HE)** for quantum-resistant end-to-end encryption with built-in DRM enforcement.
 
-The system is split into two components:
-1.  **`server.py`**: An untrusted server that relays public keys and encrypted messages.
-2.  **`client.py`**: A client simulator that manages cryptographic keys, performs the E2EE handshake, and encrypts/decrypts messages.
+This project demonstrates the integration of:
+- **ML-KEM-1024 (Kyber)** - NIST-standardized post-quantum key encapsulation
+- **AES-256-GCM** - Authenticated symmetric encryption
+- **TenSEAL** - Homomorphic encryption for privacy-preserving DRM
+- **Interactive CLI** - Rich terminal UI for user-friendly messaging
 
-At no point does the server have access to private keys or plaintext message content.
+---
 
-## Features Implemented
+## 🎯 Project Overview
 
-### 1. The Server (`server.py`)
+The system consists of three main components:
 
-The server is a simple Flask application that acts as an untrusted middleman. Its only jobs are to store public keys and relay encrypted messages.
+1. **`server.py`** - Untrusted relay server for keys and encrypted messages
+2. **`client_interactive.py`** - Interactive client with quantum-safe E2EE
+3. **`drm_policy.py`** - Homomorphic encryption DRM enforcement module
 
-* **/publish\_keys**: Receives and stores a user's public key "bundle" (Identity Key, Signed Pre-Key, and a list of One-Time Pre-Keys).
-* **/get\_keys/&lt;username&gt;**: Provides a user's key bundle to another user who wants to start a chat. It automatically "pops" a One-Time Pre-Key from the list to ensure it's only used once.
-* **/send**: Receives a fully encrypted JSON payload from a sender and saves it to a file-based mailbox for the intended recipient.
-* **/receive/&lt;username&gt;**: Allows a user to retrieve all pending encrypted messages from their mailbox. The messages are deleted from the server after retrieval.
+**Key Innovation**: Server can enforce DRM policies (play count limits) without ever decrypting message content or knowing actual usage statistics.
 
-### 2. The Client (`client.py`)
+---
 
-The client handles all cryptographic operations, ensuring that all data leaving the device is already encrypted.
+## 🛡️ Security Architecture
 
-* **Key Generation**: Each client generates its own set of `x25519` keys required for X3DH:
-    * A long-term **Identity Key**.
-    * A medium-term **Signed Pre-Key**.
-    * A list of disposable **One-Time Pre-Keys**.
-* **Handshake Initiation (Alice's side)**: To start a chat, the client:
-    1.  Fetches the recipient's (Bob's) key bundle from the server.
-    2.  Generates a new temporary (ephemeral) key.
-    3.  Performs the four X3DH Diffie-Hellman calculations.
-    4.  Uses a Key Derivation Function (KDF) to combine the results into a single, shared secret session key.
-* **Handshake Response (Bob's side)**: When receiving the *first* message from a new contact:
-    1.  Uses the public keys included in the message (Alice's Identity and Ephemeral keys).
-    2.  Performs the same four Diffie-Hellman calculations using its own private keys.
-    3.  Arrives at the **identical** shared secret session key.
-* **Secure Messaging**:
-    * All messages are encrypted and decrypted locally using **AES-256-GCM**.
-    * The first message sent to a user is a special "initial" message that includes the public keys needed to complete the handshake.
+### Post-Quantum Key Exchange (ML-KEM-1024)
 
-## Security Features
+Replaces classical Diffie-Hellman (x25519) with **NIST-standardized ML-KEM** (Module Lattice Key Encapsulation Mechanism), protecting against:
+- **Shor's Algorithm** - Quantum attacks on RSA/ECC
+- **Harvest-now-decrypt-later** attacks
 
-This implementation successfully achieves the core principles of a modern secure messenger:
+**How it works:**
+1. Alice fetches Bob's ML-KEM public key from server
+2. Alice encapsulates a shared secret → generates ciphertext
+3. Bob decapsulates ciphertext with his private key → recovers same secret
+4. Both derive AES-256-GCM session key from shared secret
 
-* **End-to-End Encryption**: The server never sees plaintext data, only encrypted blobs.
-* **Forward Secrecy**: Because the handshake relies on disposable one-time and ephemeral keys, a compromise of a user's long-term keys in the future **cannot** be used to decrypt past conversations.
-* **Asynchronous Communication**: A user can initiate a secure chat and send messages to an offline recipient. The server will securely hold the keys and messages until the recipient logs on to retrieve them.
+### End-to-End Encryption
+
+- **Content encryption**: AES-256-GCM (authenticated encryption)
+- **Session establishment**: ML-KEM-1024 key encapsulation
+- **Forward secrecy**: Fresh session keys per conversation
+- **Server trust model**: Zero-knowledge relay (never sees plaintext)
+
+### Homomorphic DRM Enforcement
+
+Uses **TenSEAL (BFV scheme)** to enable server-side policy enforcement without revealing usage data:
+
+- Play counters encrypted with homomorphic encryption
+- Server increments counters **without decryption**
+- Only client (with secret key) can verify actual count
+- Enforces limits while preserving user privacy
+
+---
+
+## 📋 Features Implemented
+
+### Server (`server.py`)
+
+| Endpoint | Purpose | Security |
+|----------|---------|----------|
+| `/publish_keys` | Store user's ML-KEM public key | Public key storage only |
+| `/get_keys/<user>` | Retrieve public key for session init | No private data exposed |
+| `/send` | Store encrypted message | Content remains encrypted |
+| `/receive/<user>` | Deliver pending messages | Auto-delete after reading |
+| `/drm_play` | Increment play counter | Server-side DRM tracking |
+| `/drm_status` | Check DRM limit status | Returns counter state |
+
+**Key Properties:**
+- ✅ Never stores private keys
+- ✅ Never decrypts message content
+- ✅ Auto-deletes messages after delivery
+- ✅ Tracks DRM compliance without seeing usage data
+
+### Interactive Client (`client_interactive.py`)
+
+**Quantum-Safe Operations:**
+- **Key Generation**: ML-KEM-1024 keypair creation
+- **Session Establishment**: Quantum-resistant key agreement
+- **Message Encryption**: AES-256-GCM with PQC-derived keys
+- **DRM Token Creation**: Homomorphically encrypted play counters
+
+**User Interface:**
+- 📨 Send encrypted messages with optional DRM
+- 📬 Check inbox and decrypt messages
+- 👥 View active secure sessions
+- 🎫 Configure DRM play limits per message
+- 🚪 Clean exit with session cleanup
+
+### DRM Policy Module (`drm_policy.py`)
+
+**Homomorphic Encryption Features:**
+- Initialize TenSEAL BFV context for integer operations
+- Create DRM licenses with encrypted play counters
+- Homomorphically increment counters (server-side)
+- Decrypt and verify limits (client-side only)
+
+**Privacy Guarantee**: Server performs arithmetic on encrypted values without learning actual counts.
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+- Python 3.8+
+- pip package manager
+- Virtual environment (recommended)
+
+### Setup
+
